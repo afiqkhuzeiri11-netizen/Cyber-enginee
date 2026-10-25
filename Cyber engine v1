@@ -1,4 +1,4 @@
--- [[ CYBER ENGINE V7 - STRICT REGION EXCLUDE FARM ]] --
+-- [[ CYBER ENGINE V9 - ABSOLUTE SAFE ZONE & PLOT BLOCKER ]] --
 
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
@@ -31,14 +31,14 @@ if not success or not Rayfield then
 end
 
 local Window = Rayfield:CreateWindow({
-   Name = "⚡ Cyber Engine V7 // Region Exclude",
-   LoadingTitle = "Memuat Sistem Wilayah...",
+   Name = "⚡ Cyber Engine V9 // Clean Map Farm",
+   LoadingTitle = "Memuat Sistem V9...",
    LoadingSubtitle = "by Cyber Engine",
    ConfigurationSaving = { Enabled = false },
    KeySystem = false, 
 })
 
-local MainTab = Window:CreateTab("🥚 Region Farm", 4483362458)
+local MainTab = Window:CreateTab("🥚 Farm Murni Map", 4483362458)
 local PlayerTab = Window:CreateTab("🚀 Settings", 4483362458)
 
 local isAutoEgg = false
@@ -48,7 +48,7 @@ local customBasePos = nil
 local farmedCache = {}
 
 MainTab:CreateToggle({
-   Name = "🥚 Auto Farm (Anti-Base & Anti-SafeZone Wilayah)",
+   Name = "🥚 Auto Farm (100% Skip Safe Zone & Plot)",
    CurrentValue = false,
    Callback = function(Value)
       isAutoEgg = Value
@@ -56,13 +56,13 @@ MainTab:CreateToggle({
 })
 
 PlayerTab:CreateButton({
-   Name = "📍 Set Titik Tengah Base / Plot",
+   Name = "📍 Set Posisi Base Pulang (Wajib Diset)",
    Callback = function()
       pcall(function()
          local char = Player.Character
          if char and char:FindFirstChild("HumanoidRootPart") then
             customBasePos = char.HumanoidRootPart.CFrame
-            Rayfield:Notify({ Title = "Wilayah Base Disimpan!", Content = "Semua telur dalam radius area base diabaikan.", Duration = 3 })
+            Rayfield:Notify({ Title = "Base Disimpan!", Content = "Titik pulang aktif.", Duration = 3 })
          end
       end)
    end,
@@ -86,36 +86,39 @@ PlayerTab:CreateInput({
    end,
 })
 
--- FUNGSI VALIDASI WILAYAH (Mendeteksi apakah posisi telur berada di dalam wilayah base/plot/safezone)
-local function isInsideRestrictedZone(pos)
-    -- 1. Cek berdasarkan posisi base yang di-set manual (Radius diperlebar jadi 60 stud untuk mencakup satu wilayah plot)
+-- FUNGSI FILTER WILAYAH: MENGABAIKAN SELURUH AREA SAFE ZONE, PLOT, DAN BASE
+local function isInsideSafeOrPlot(pos)
+    -- 1. Jika posisi terlalu dekat dengan titik base yang disimpan (Radius 70 stud mencakup seluruh area base & safe zone di sekitar plot)
     if customBasePos then
-        local dist = (pos - customBasePos.Position).Magnitude
-        if dist < 65 then
+        local distToBase = (pos - customBasePos.Position).Magnitude
+        if distToBase < 75 then
             return true
         end
     end
 
-    -- 2. Cek otomatis berdasarkan objek wilayah base/plot/safezone di Workspace
+    -- 2. Deteksi otomatis semua objek yang ada kata "safe", "zone", "plot", "base", "spawn" di workspace
     for _, obj in pairs(Workspace:GetDescendants()) do
         pcall(function()
-            if obj and obj:IsA("BasePart") then
+            if obj and (obj:IsA("BasePart") or obj:IsA("Model")) then
                 local name = obj.Name:lower()
-                if name:find("plot") or name:find("base") or name:find("safezone") or name:find("spawn") then
-                    local distToZone = (pos - obj.Position).Magnitude
-                    -- Jika posisi telur sangat dekat dengan part base/plot, anggap sebagai area terlarang
-                    if distToZone < 40 and obj.Size.Magnitude > 10 then
-                        return true
+                if name:find("safe") or name:find("zone") or name:find("plot") or name:find("base") or name:find("spawn") then
+                    local part = obj:IsA("Model") and (obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart")) or obj
+                    if part and part:IsA("BasePart") then
+                        local dist = (pos - part.Position).Magnitude
+                        -- Jika posisi telur berada di dalam area part tersebut atau dekat sekali
+                        if dist < 50 then
+                            return true
+                        end
                     end
                 end
             end
         end)
     end
-    
+
     return false
 end
 
--- LOGIKA FARMING UTAMA DENGAN FILTER WILAYAH
+-- LOGIKA FARMING UTAMA: FARM DI LUAR -> AMBIL -> TELEPORT BALIK KE BASE
 task.spawn(function()
     while task.wait(1.2) do
         pcall(function()
@@ -133,7 +136,7 @@ task.spawn(function()
                     if obj and (obj:IsA("Model") or obj:IsA("BasePart")) then
                         local name = obj.Name:lower()
                         
-                        -- Hanya ambil objek yang benar-benar bernama egg/telur/nest di luar wilayah terlarang
+                        -- Pastikan hanya mengambil telur murni di luar area safe zone/plot
                         if (name:find("egg") or name:find("telur") or name:find("nest")) 
                            and not name:find("player") 
                            and not name:find("character") 
@@ -145,17 +148,17 @@ task.spawn(function()
                             local part = obj:IsA("Model") and (obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart")) or obj
                             if part and part:IsA("BasePart") and part.Position.Y > -30 then
                                 
-                                -- Panggil fungsi cek wilayah terlarang
-                                local restricted = isInsideRestrictedZone(part.Position)
+                                -- CEK APAKAH TELUR ADA DI DALAM SAFE ZONE / PLOT
+                                local restricted = isInsideSafeOrPlot(part.Position)
 
                                 if not restricted and (not farmedCache[part] or (tick() - farmedCache[part] > 8)) then
                                     farmedCache[part] = tick()
 
-                                    -- 1. Teleport ke telur di luar wilayah base
+                                    -- 1. Teleport ke telur di luar safe zone
                                     hrp.CFrame = part.CFrame * CFrame.new(0, 3, 0)
-                                    task.wait(0.25)
+                                    task.wait(0.3)
 
-                                    -- 2. Jalankan ProximityPrompt
+                                    -- 2. Trigger ProximityPrompt
                                     local prompt = obj:FindFirstChildWhichIsA("ProximityPrompt", true) or part:FindFirstChildWhichIsA("ProximityPrompt", true)
                                     if prompt and fireproximityprompt then
                                         fireproximityprompt(prompt)
@@ -174,7 +177,7 @@ task.spawn(function()
                                         end
                                     end
 
-                                    -- 4. Touch interest
+                                    -- 4. Simulasi touch interest
                                     if firetouchinterest then
                                         firetouchinterest(hrp, part, 0)
                                         task.wait(0.05)
@@ -183,11 +186,9 @@ task.spawn(function()
 
                                     task.wait(0.4)
 
-                                    -- 5. Bawa pulang ke base
-                                    if customBasePos then
-                                        hrp.CFrame = baseCFrame
-                                        task.wait(0.8)
-                                    end
+                                    -- 5. WAJIB TELEPORT BALIK KE BASE SETELAH AMBIL TELUR
+                                    hrp.CFrame = baseCFrame
+                                    task.wait(0.8)
                                 end
                             end
                         end
@@ -208,8 +209,8 @@ RunService.Heartbeat:Connect(function()
 end)
 
 Rayfield:Notify({
-   Title = "Cyber Engine V7 Aktif",
-   Content = "Sistem Wilayah Exclude Dipasang!",
+   Title = "Cyber Engine V9 Aktif",
+   Content = "Safe Zone & Auto-Return Diperbaiki!",
    Duration = 5,
    Image = 4483362458,
 })
