@@ -1,4 +1,4 @@
--- [[ CYBER ENGINE V6.1 - ADVANCED EXCLUSION ZONE & SMART LOCK ]] --
+-- [[ CYBER ENGINE V6.2 - FIXED GUI LOADER ]] --
 
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
@@ -23,6 +23,7 @@ pcall(function()
     end
 end)
 
+-- MENGGUNAKAN DUA PILIHAN URL RAYFIELD (ANTI-GAGAL)
 local success, Rayfield = pcall(function()
     return loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 end)
@@ -32,8 +33,8 @@ if not success or not Rayfield then
 end
 
 local Window = Rayfield:CreateWindow({
-   Name = "⚡ Cyber Engine V6.1 // No-Base Farm",
-   LoadingTitle = "Memuat Sistem Anti-Base...",
+   Name = "⚡ Cyber Engine V6.2 // Fixed GUI",
+   LoadingTitle = "Memuat Antarmuka...",
    LoadingSubtitle = "by Cyber Engine",
    ConfigurationSaving = { Enabled = false },
    KeySystem = false, 
@@ -95,7 +96,6 @@ local function getValidMapEggs(hrp)
             if obj and (obj:IsA("Model") or obj:IsA("BasePart")) then
                 local name = obj.Name:lower()
                 
-                -- Filter ketat nama objek telur asli di map
                 if (name:find("egg") or name:find("telur") or name:find("nest")) 
                    and not name:find("player") 
                    and not name:find("character") 
@@ -107,16 +107,14 @@ local function getValidMapEggs(hrp)
                     local part = obj:IsA("Model") and (obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart")) or obj
                     if part and part:IsA("BasePart") and part.Position.Y > -30 and part.Transparency < 1 then
                         
-                        -- Cek jarak terhadap Base / Safe Zone yang disimpan (Abaikan jika berada dalam radius 35 stud dari base)
                         local isInsideBase = false
                         if customBasePos then
                             local distToBase = (part.Position - customBasePos.Position).Magnitude
-                            if distToBase < 35 then -- Radius aman area base plot
+                            if distToBase < 35 then
                                 isInsideBase = true
                             end
                         end
                         
-                        -- Jika tidak berada di area base, masukkan ke daftar telur valid di map
                         if not isInsideBase then
                             table.insert(eggs, {Model = obj, Part = part})
                         end
@@ -128,7 +126,7 @@ local function getValidMapEggs(hrp)
     return eggs
 end
 
--- LOGIKA FARMING UTAMA: FOKUS MURNI HANYA DI LUAR BASE
+-- LOGIKA FARMING UTAMA
 task.spawn(function()
     while task.wait(1.2) do
         pcall(function()
@@ -144,7 +142,6 @@ task.spawn(function()
             local targetEggData = nil
             local shortestDist = math.huge
 
-            -- Cari telur terdekat di luar area base
             for _, eggData in ipairs(eggs) do
                 local part = eggData.Part
                 if part and (not farmedCache[part] or (tick() - farmedCache[part] > 8)) then
@@ -156,17 +153,63 @@ task.spawn(function()
                 end
             end
 
-            -- Eksekusi pengambilan telur
             if targetEggData then
                 local part = targetEggData.Part
                 local model = targetEggData.Model
                 farmedCache[part] = tick()
 
-                -- 1. Teleport ke telur di map
                 hrp.CFrame = part.CFrame * CFrame.new(0, 3, 0)
                 task.wait(0.25)
 
-                -- 2. Jalankan ProximityPrompt
                 local prompt = model:FindFirstChildWhichIsA("ProximityPrompt", true) or part:FindFirstChildWhichIsA("ProximityPrompt", true)
                 if prompt and fireproximityprompt then
-                    fireproximity
+                    fireproximityprompt(prompt)
+                end
+
+                for _, remote in pairs(ReplicatedStorage:GetDescendants()) do
+                    if remote:IsA("RemoteEvent") then
+                        local rName = remote.Name:lower()
+                        if rName:find("egg") or rName:find("pickup") or rName:find("collect") or rName:find("claim") then
+                            pcall(function()
+                                remote:FireServer(model)
+                                remote:FireServer(part)
+                            end)
+                        end
+                    end
+                end
+
+                if firetouchinterest then
+                    firetouchinterest(hrp, part, 0)
+                    task.wait(0.05)
+                    firetouchinterest(hrp, part, 1)
+                end
+
+                task.wait(0.4)
+
+                if customBasePos then
+                    hrp.CFrame = baseCFrame
+                    task.wait(0.8)
+                end
+            end
+        end)
+    end
+end)
+
+RunService.Heartbeat:Connect(function()
+    pcall(function()
+        local char = Player.Character
+        if not char then return end
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        if hum then
+            hum.WalkSpeed = walkSpeedVal
+            if isGodMode then hum.Health = hum.MaxHealth end
+        end
+    end)
+end)
+
+Rayfield:Notify({
+   Title = "Cyber Engine V6.2 Aktif",
+   Content = "GUI Berhasil Dimuat!",
+   Duration = 5,
+   Image = 4483362458,
+})
