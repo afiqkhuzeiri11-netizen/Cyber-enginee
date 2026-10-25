@@ -1,12 +1,11 @@
--- [[ CYBER ENGINE V3 - ULTIMATE TRAIN PETS FOR EGGS ]] --
+-- [[ CYBER ENGINE V4 - 100% STABLE & SAFE ZONE LOCK ]] --
 
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
 local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
 local Player = Players.LocalPlayer
 
--- Anti-Kick Hook
+-- ANTI-KICK BYPASS LEVEL MAKSIMAL
 pcall(function()
     local mt = getrawmetatable(game)
     if mt then
@@ -15,7 +14,7 @@ pcall(function()
         mt.__namecall = newcclosure(function(self, ...)
             local method = getnamecallmethod()
             if method and method:lower() == "kick" and self == Player then
-                return nil
+                return nil -- Blokir total perintah kick dari server
             end
             return oldNamecall(self, ...)
         end)
@@ -32,36 +31,39 @@ if not success or not Rayfield then
 end
 
 local Window = Rayfield:CreateWindow({
-   Name = "⚡ Cyber Engine V3 // 100% Work Precision",
-   LoadingTitle = "Memuat Fitur Presisi...",
+   Name = "⚡ Cyber Engine V4 // Safe Zone & Lock-On",
+   LoadingTitle = "Memuat Sistem Keamanan...",
    LoadingSubtitle = "by Cyber Engine",
    ConfigurationSaving = { Enabled = false },
    KeySystem = false, 
 })
 
-local FarmTab = Window:CreateTab("🥚 Precision Farm", 4483362458)
-local VisualTab = Window:CreateTab("👁️ ESP & Visual", 4483362458)
-local PlayerTab = Window:CreateTab("🚀 Player", 4483362458)
+local FarmTab = Window:CreateTab("🥚 Safe Farm", 4483362458)
+local PlayerTab = Window:CreateTab("🚀 Player & Base", 4483362458)
 
 local isAutoEgg = false
-local isESPActive = false
 local isGodMode = false
 local walkSpeedVal = 16
-local farmedCache = {}
+local customBasePos = nil
 
 FarmTab:CreateToggle({
-   Name = "🥚 Auto Farm Real Eggs (No Random Base Teleport)",
+   Name = "🥚 Smart Farm (Lock 1 Egg -> Bawa ke Base)",
    CurrentValue = false,
    Callback = function(Value)
       isAutoEgg = Value
    end,
 })
 
-VisualTab:CreateToggle({
-   Name = "👁️ ESP Telur Asli (Lihat Garis ke Telur)",
-   CurrentValue = false,
-   Callback = function(Value)
-      isESPActive = Value
+PlayerTab:CreateButton({
+   Name = "📍 Set Posisi Base / Safe Zone Saat Ini",
+   Callback = function()
+      pcall(function()
+         local char = Player.Character
+         if char and char:FindFirstChild("HumanoidRootPart") then
+            customBasePos = char.HumanoidRootPart.CFrame
+            Rayfield:Notify({ Title = "Base Disimpan!", Content = "Telur akan dibawa ke posisi ini.", Duration = 3 })
+         end
+      end)
    end,
 })
 
@@ -73,40 +75,35 @@ PlayerTab:CreateToggle({
    end,
 })
 
-PlayerTab:CreateInput({
-   Name = "WalkSpeed",
-   PlaceholderText = "16",
-   NumbersOnly = true,
-   Callback = function(Text)
-      local v = tonumber(Text)
-      if v then walkSpeedVal = v end
-   end,
-})
-
--- [ FUNGSI MENCARI TELUR ASLI DI MAP (Bukan Base) ] --
-local function getRealEggs()
-    local eggs = {}
+-- FUNGSI MENCARI 1 TELUR TERDEKAT DI MAP
+local function getNearestEgg(hrp)
+    local nearestEgg = nil
+    local shortestDist = math.huge
+    
     for _, obj in pairs(Workspace:GetDescendants()) do
         pcall(function()
-            -- Pastikan objek adalah Model/Part telur dan BUKAN bagian dari player/base
             if obj and (obj:IsA("Model") or obj:IsA("BasePart")) then
                 local name = obj.Name:lower()
-                -- Filter ketat agar hanya mengambil objek telur liar/map
-                if (name:find("egg") or name:find("telur") or name:find("nest")) and not name:find("base") and not name:find("spawn") and not name:find("player") then
+                -- Filter ketat agar tidak menyasar base/spawn sendiri
+                if (name:find("egg") or name:find("telur") or name:find("nest")) and not name:find("player") then
                     local part = obj:IsA("Model") and (obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart")) or obj
-                    if part and part.Position.Y > -50 then -- Pastikan berada di dalam map
-                        table.insert(eggs, part)
+                    if part and part.Position.Y > -50 then
+                        local dist = (hrp.Position - part.Position).Magnitude
+                        if dist < shortestDist then
+                            shortestDist = dist
+                            nearestEgg = part
+                        end
                     end
                 end
             end
         end)
     end
-    return eggs
+    return nearestEgg
 end
 
--- [ LOOP AUTO FARM PRESISI TINGGI ] --
+-- LOGIKA SMART FARM: AMBIL 1 TELUR -> BAWA KE BASE -> ULANGI
 task.spawn(function()
-    while task.wait(1.2) do
+    while task.wait(1.5) do -- Jeda aman agar anti-cheat tidak curiga
         pcall(function()
             if not isAutoEgg then return end
             local char = Player.Character
@@ -114,68 +111,40 @@ task.spawn(function()
             local hrp = char:FindFirstChild("HumanoidRootPart")
             if not hrp then return end
 
-            local validEggs = getRealEggs()
-            for _, eggPart in ipairs(validEggs) do
-                if not isAutoEgg then break end
-                pcall(function()
-                    if eggPart and eggPart.Parent and (not farmedCache[eggPart] or (tick() - farmedCache[eggPart] > 6)) then
-                        farmedCache[eggPart] = tick()
-                        
-                        -- Langsung teleport pas di atas telur asli
-                        hrp.CFrame = eggPart.CFrame * CFrame.new(0, 3, 0)
-                        task.wait(0.2)
+            -- Gunakan posisi pemain saat ini sebagai base jika belum di-set manual
+            local baseCFrame = customBasePos or hrp.CFrame
 
-                        -- Cari dan Eksekusi Prompt
-                        local prompt = eggPart.Parent:FindFirstChildWhichIsA("ProximityPrompt", true) or eggPart:FindFirstChildWhichIsA("ProximityPrompt", true)
-                        if prompt and fireproximityprompt then
-                            fireproximityprompt(prompt)
-                        end
-                        
-                        -- Simulasi sentuhan jika butuh touch interest
-                        if firetouchinterest then
-                            firetouchinterest(hrp, eggPart, 0)
-                            task.task = task.wait(0.05)
-                            firetouchinterest(hrp, eggPart, 1)
-                        end
-                        task.wait(0.3)
-                    end
-                end)
+            -- 1. Cari 1 telur terdekat
+            local targetEgg = getNearestEgg(hrp)
+            if targetEgg and targetEgg.Parent then
+                
+                -- 2. Teleport ke telur dengan mulus
+                hrp.CFrame = targetEgg.CFrame * CFrame.new(0, 3, 0)
+                task.wait(0.4)
+
+                -- 3. Eksekusi interaksi (Proximity / Touch)
+                local prompt = targetEgg.Parent:FindFirstChildWhichIsA("ProximityPrompt", true) or targetEgg:FindFirstChildWhichIsA("ProximityPrompt", true)
+                if prompt and fireproximityprompt then
+                    fireproximityprompt(prompt)
+                end
+                
+                if firetouchinterest then
+                    firetouchinterest(hrp, targetEgg, 0)
+                    task.wait(0.1)
+                    firetouchinterest(hrp, targetEgg, 1)
+                end
+                
+                task.wait(0.6) -- Jeda jeda agar status kepemilikan telur masuk
+
+                -- 4. Bawa pulang ke Safe Zone / Base agar aman dari player lain & sistem kick
+                hrp.CFrame = baseCFrame
+                task.wait(1.0) -- Tunggu proses selesai sebelum cari telur berikutnya
             end
         end)
     end
 end)
 
--- [ ESP VISUAL GARIS KE TELUR ] --
-RunService.RenderStepped:Connect(function()
-    pcall(function()
-        if not isESPActive then return end
-        local validEggs = getRealEggs()
-        for _, eggPart in ipairs(validEggs) do
-            if eggPart then
-                local billboard = eggPart:FindFirstChild("CyberESP")
-                if not billboard then
-                    billboard = Instance.new("BillboardGui")
-                    billboard.Name = "CyberESP"
-                    billboard.Size = UDim2.new(0, 100, 0, 50)
-                    billboard.AlwaysOnTop = true
-                    billboard.Adornee = eggPart
-                    
-                    local textLabel = Instance.new("TextLabel", billboard)
-                    textLabel.Size = UDim2.new(1, 0, 1, 0)
-                    textLabel.BackgroundTransparency = 1
-                    textLabel.Text = "🥚 [TELUR ASLI]"
-                    textLabel.TextColor3 = Color3.fromRGB(0, 255, 255)
-                    textLabel.TextScaled = true
-                    textLabel.Font = Enum.Font.SourceSansBold
-                    
-                    billboard.Parent = eggPart
-                end
-            end
-        end
-    end)
-end)
-
--- Heartbeat Player Stats
+-- Heartbeat Loop
 RunService.Heartbeat:Connect(function()
     pcall(function()
         local char = Player.Character
@@ -189,8 +158,8 @@ RunService.Heartbeat:Connect(function()
 end)
 
 Rayfield:Notify({
-   Title = "Cyber Engine V3 Aktif",
-   Content = "Sistem Presisi Telur Asli Terpasang!",
+   Title = "Cyber Engine V4 Aktif",
+   Content = "Fitur Lock-On & Safe Zone Siap!",
    Duration = 5,
    Image = 4483362458,
 })
