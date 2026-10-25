@@ -1,4 +1,4 @@
--- [[ CYBER ENGINE X.1 - FIXED LOOT DELAY & SAFE RETURN ]] --
+-- [[ CYBER ENGINE X.2 - MULTI-ZONE RARITY SELECTOR & ULTIMATE UI ]] --
 
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
@@ -23,6 +23,7 @@ pcall(function()
     end
 end)
 
+-- LOAD RAYFIELD DENGAN FALLBACK AMAN
 local success, Rayfield = pcall(function()
     return loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 end)
@@ -32,15 +33,16 @@ if not success or not Rayfield then
 end
 
 local Window = Rayfield:CreateWindow({
-   Name = "⚡ Cyber Engine X.1 // Fixed Timing",
-   LoadingTitle = "Memuat Sistem X.1...",
+   Name = "⚡ Cyber Engine X.2 // Multi-Zone Pro",
+   LoadingTitle = "Memuat Sistem 11 Wilayah...",
    LoadingSubtitle = "by Cyber Engine",
    ConfigurationSaving = { Enabled = false },
    KeySystem = false, 
 })
 
-local MainTab = Window:CreateTab("🥚 Farm & Loot", 4483362458)
-local PlayerTab = Window:CreateTab("🛡️ Security & Settings", 4483362458)
+-- TAB MENU UTAMA
+local MainTab = Window:CreateTab("🥚 Zone Farm Selector", 4483362458)
+local ConfigTab = Window:CreateTab("🚀 Base & Settings", 4483362458)
 
 local isAutoEgg = false
 local isGodMode = false
@@ -48,91 +50,10 @@ local walkSpeedVal = 16
 local customBasePos = nil
 local farmedCache = {}
 
-MainTab:CreateToggle({
-   Name = "🥚 Auto Farm (Ambil Dulu Baru Pulang)",
-   CurrentValue = false,
-   Callback = function(Value)
-      isAutoEgg = Value
-   end,
-})
-
-PlayerTab:CreateButton({
-   Name = "📍 Set Titik Pulang Base / Safe Zone",
-   Callback = function()
-      pcall(function()
-         local char = Player.Character
-         if char and char:FindFirstChild("HumanoidRootPart") then
-            customBasePos = char.HumanoidRootPart.CFrame
-            Rayfield:Notify({ Title = "Base Terkunci!", Content = "Titik pulang & area aman disimpan.", Duration = 3 })
-         end
-      end)
-   end,
-})
-
-PlayerTab:CreateToggle({
-   Name = "🛡️ God Mode Anti-Damage",
-   CurrentValue = false,
-   Callback = function(Value)
-      isGodMode = Value
-   end,
-})
-
-PlayerTab:CreateInput({
-   Name = "WalkSpeed Custom",
-   PlaceholderText = "16",
-   NumbersOnly = true,
-   Callback = function(Text)
-      local v = tonumber(Text)
-      if v then walkSpeedVal = v end
-   end,
-})
-
--- FUNGSI BLOKIR WILAYAH SAFE ZONE & PLOT SECARA TOTAL
-local function isInsideRestrictedZone(pos)
-    if customBasePos then
-        if (pos - customBasePos.Position).Magnitude < 85 then
-            return true
-        end
-    end
-
-    for _, obj in pairs(Workspace:GetDescendants()) do
-        pcall(function()
-            if obj and (obj:IsA("BasePart") or obj:IsA("Model")) then
-                local name = obj.Name:lower()
-                if name:find("safe") or name:find("zone") or name:find("plot") or name:find("base") or name:find("spawn") then
-                    local part = obj:IsA("Model") and (obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart")) or obj
-                    if part and part:IsA("BasePart") then
-                        if (pos - part.Position).Magnitude < 60 then
-                            return true
-                        end
-                    end
-                end
-            end
-        end)
-    end
-    return false
-end
-
--- EKSEKUSI FARMING DENGAN JEDA WAKTU PENGAMBILAN YANG PAS
-task.spawn(function()
-    while task.wait(1.2) do
-        pcall(function()
-            if not isAutoEgg then return end
-            local char = Player.Character
-            if not char then return end
-            local hrp = char:FindFirstChild("HumanoidRootPart")
-            if not hrp then return end
-
-            local baseCFrame = customBasePos or hrp.CFrame
-
-            for _, obj in pairs(Workspace:GetDescendants()) do
-                if not isAutoEgg then break end
-                pcall(function()
-                    if obj and (obj:IsA("Model") or obj:IsA("BasePart")) then
-                        local name = obj.Name:lower()
-                        
-                        if (name:find("egg") or name:find("telur") or name:find("nest")) 
-                           and not name:find("player") 
-                           and not name:find("character") 
-                           and not name:find("base") 
-                           and not name:find("
+-- TABEL STATUS WILAYAH (11 ZONA)
+local selectedZones = {
+    Forest = false,
+    Dune = false,
+    Swamp = false,
+    Mushroom = false,
+    Ocean = false,
