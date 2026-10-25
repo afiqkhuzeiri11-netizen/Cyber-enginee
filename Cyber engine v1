@@ -1,100 +1,81 @@
--- [[ CYBER ENGINE V1 - DIRECT EMBEDDED RAYFIELD ]] --
+-- [[ CYBER ENGINE V3 - ULTIMATE TRAIN PETS FOR EGGS ]] --
 
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
-local VirtualInputManager = game:GetService("VirtualInputManager")
 local Player = Players.LocalPlayer
 
--- Menggunakan URL Mirror Rayfield yang Stabil
+-- Anti-Kick Hook
+pcall(function()
+    local mt = getrawmetatable(game)
+    if mt then
+        setreadonly(mt, false)
+        local oldNamecall = mt.__namecall
+        mt.__namecall = newcclosure(function(self, ...)
+            local method = getnamecallmethod()
+            if method and method:lower() == "kick" and self == Player then
+                return nil
+            end
+            return oldNamecall(self, ...)
+        end)
+        setreadonly(mt, true)
+    end
+end)
+
 local success, Rayfield = pcall(function()
     return loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 end)
 
 if not success or not Rayfield then
-    -- Fallback jika link utama gagal
     Rayfield = loadstring(game:HttpGet('https://raw.githubusercontent.com/shlexware/Rayfield/main/source'))()
 end
 
 local Window = Rayfield:CreateWindow({
-   Name = "⚡ Cyber Engine V1 // Train Pets for Eggs",
-   LoadingTitle = "Memuat Cyber Engine V1...",
+   Name = "⚡ Cyber Engine V3 // 100% Work Precision",
+   LoadingTitle = "Memuat Fitur Presisi...",
    LoadingSubtitle = "by Cyber Engine",
    ConfigurationSaving = { Enabled = false },
    KeySystem = false, 
 })
 
--- Tabs UI
-local MainTab = Window:CreateTab("🥚 Auto Farm", 4483362458)
-local TrainTab = Window:CreateTab("🏋️ Training & Speed", 4483362458)
-local PlayerTab = Window:CreateTab("🚀 Player & Safe", 4483362458)
+local FarmTab = Window:CreateTab("🥚 Precision Farm", 4483362458)
+local VisualTab = Window:CreateTab("👁️ ESP & Visual", 4483362458)
+local PlayerTab = Window:CreateTab("🚀 Player", 4483362458)
 
--- Status Variabel
 local isAutoEgg = false
-local isAutoHatch = false
-local isAutoTrain = false
-local isAutoClick = false
-local isInfJump = false
+local isESPActive = false
 local isGodMode = false
 local walkSpeedVal = 16
-
 local farmedCache = {}
 
--- [ 1. TAB AUTO FARM ] --
-MainTab:CreateToggle({
-   Name = "🥚 Auto Grab & Collect Eggs",
+FarmTab:CreateToggle({
+   Name = "🥚 Auto Farm Real Eggs (No Random Base Teleport)",
    CurrentValue = false,
    Callback = function(Value)
       isAutoEgg = Value
    end,
 })
 
-MainTab:CreateToggle({
-   Name = "🐣 Auto Open / Hatch Eggs",
+VisualTab:CreateToggle({
+   Name = "👁️ ESP Telur Asli (Lihat Garis ke Telur)",
    CurrentValue = false,
    Callback = function(Value)
-      isAutoHatch = Value
+      isESPActive = Value
    end,
 })
 
-MainTab:CreateToggle({
-   Name = "⚡ Fast Auto Clicker",
-   CurrentValue = false,
-   Callback = function(Value)
-      isAutoClick = Value
-   end,
-})
-
--- [ 2. TAB TRAINING & GYM ] --
-TrainTab:CreateToggle({
-   Name = "🏋️ Auto Train / Treadmill Gym",
-   CurrentValue = false,
-   Callback = function(Value)
-      isAutoTrain = Value
-   end,
-})
-
--- [ 3. TAB PLAYER & UTILITY ] --
 PlayerTab:CreateToggle({
-   Name = "🛡️ God Mode / Anti-Death",
+   Name = "🛡️ God Mode",
    CurrentValue = false,
    Callback = function(Value)
       isGodMode = Value
    end,
 })
 
-PlayerTab:CreateToggle({
-   Name = "🚀 Infinite Jump",
-   CurrentValue = false,
-   Callback = function(Value)
-      isInfJump = Value
-   end,
-})
-
 PlayerTab:CreateInput({
-   Name = "WalkSpeed (Default: 16)",
-   PlaceholderText = "Masukkan angka...",
+   Name = "WalkSpeed",
+   PlaceholderText = "16",
    NumbersOnly = true,
    Callback = function(Text)
       local v = tonumber(Text)
@@ -102,21 +83,30 @@ PlayerTab:CreateInput({
    end,
 })
 
-PlayerTab:CreateButton({
-   Name = "🏠 Teleport to Base / Spawn",
-   Callback = function()
-      pcall(function()
-         local char = Player.Character
-         if char and char:FindFirstChild("HumanoidRootPart") then
-            char.HumanoidRootPart.CFrame = CFrame.new(0, 10, 0)
-         end
-      end)
-   end,
-})
+-- [ FUNGSI MENCARI TELUR ASLI DI MAP (Bukan Base) ] --
+local function getRealEggs()
+    local eggs = {}
+    for _, obj in pairs(Workspace:GetDescendants()) do
+        pcall(function()
+            -- Pastikan objek adalah Model/Part telur dan BUKAN bagian dari player/base
+            if obj and (obj:IsA("Model") or obj:IsA("BasePart")) then
+                local name = obj.Name:lower()
+                -- Filter ketat agar hanya mengambil objek telur liar/map
+                if (name:find("egg") or name:find("telur") or name:find("nest")) and not name:find("base") and not name:find("spawn") and not name:find("player") then
+                    local part = obj:IsA("Model") and (obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart")) or obj
+                    if part and part.Position.Y > -50 then -- Pastikan berada di dalam map
+                        table.insert(eggs, part)
+                    end
+                end
+            end
+        end)
+    end
+    return eggs
+end
 
--- [ 4. LOGIKA AUTO FARM TELUR ] --
+-- [ LOOP AUTO FARM PRESISI TINGGI ] --
 task.spawn(function()
-    while task.wait(0.3) do
+    while task.wait(1.2) do
         pcall(function()
             if not isAutoEgg then return end
             local char = Player.Character
@@ -124,55 +114,73 @@ task.spawn(function()
             local hrp = char:FindFirstChild("HumanoidRootPart")
             if not hrp then return end
 
-            for _, obj in pairs(Workspace:GetDescendants()) do
-                if isAutoEgg and obj and (obj:IsA("BasePart") or obj:IsA("Model")) then
-                    local name = obj.Name:lower()
-                    if name:find("egg") or name:find("telur") or name:find("nest") or name:find("pickup") then
-                        local part = obj:IsA("Model") and (obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart")) or obj
-                        if part and (not farmedCache[part] or (tick() - farmedCache[part] > 5)) then
-                            farmedCache[part] = tick()
-                            
-                            hrp.CFrame = part.CFrame * CFrame.new(0, 2, 0)
-                            task.wait(0.1)
+            local validEggs = getRealEggs()
+            for _, eggPart in ipairs(validEggs) do
+                if not isAutoEgg then break end
+                pcall(function()
+                    if eggPart and eggPart.Parent and (not farmedCache[eggPart] or (tick() - farmedCache[eggPart] > 6)) then
+                        farmedCache[eggPart] = tick()
+                        
+                        -- Langsung teleport pas di atas telur asli
+                        hrp.CFrame = eggPart.CFrame * CFrame.new(0, 3, 0)
+                        task.wait(0.2)
 
-                            local prompt = obj:FindFirstChildWhichIsA("ProximityPrompt", true) or part:FindFirstChildWhichIsA("ProximityPrompt", true)
-                            if prompt and fireproximityprompt then
-                                fireproximityprompt(prompt)
-                            end
-
-                            if firetouchinterest then
-                                firetouchinterest(hrp, part, 0)
-                                task.wait(0.05)
-                                firetouchinterest(hrp, part, 1)
-                            end
-                            task.wait(0.15)
+                        -- Cari dan Eksekusi Prompt
+                        local prompt = eggPart.Parent:FindFirstChildWhichIsA("ProximityPrompt", true) or eggPart:FindFirstChildWhichIsA("ProximityPrompt", true)
+                        if prompt and fireproximityprompt then
+                            fireproximityprompt(prompt)
                         end
+                        
+                        -- Simulasi sentuhan jika butuh touch interest
+                        if firetouchinterest then
+                            firetouchinterest(hrp, eggPart, 0)
+                            task.task = task.wait(0.05)
+                            firetouchinterest(hrp, eggPart, 1)
+                        end
+                        task.wait(0.3)
                     end
+                end)
+            end
+        end)
+    end
+end)
+
+-- [ ESP VISUAL GARIS KE TELUR ] --
+RunService.RenderStepped:Connect(function()
+    pcall(function()
+        if not isESPActive then return end
+        local validEggs = getRealEggs()
+        for _, eggPart in ipairs(validEggs) do
+            if eggPart then
+                local billboard = eggPart:FindFirstChild("CyberESP")
+                if not billboard then
+                    billboard = Instance.new("BillboardGui")
+                    billboard.Name = "CyberESP"
+                    billboard.Size = UDim2.new(0, 100, 0, 50)
+                    billboard.AlwaysOnTop = true
+                    billboard.Adornee = eggPart
+                    
+                    local textLabel = Instance.new("TextLabel", billboard)
+                    textLabel.Size = UDim2.new(1, 0, 1, 0)
+                    textLabel.BackgroundTransparency = 1
+                    textLabel.Text = "🥚 [TELUR ASLI]"
+                    textLabel.TextColor3 = Color3.fromRGB(0, 255, 255)
+                    textLabel.TextScaled = true
+                    textLabel.Font = Enum.Font.SourceSansBold
+                    
+                    billboard.Parent = eggPart
                 end
             end
-        end)
-    end
+        end
+    end)
 end)
 
--- Auto Clicker & Training Loop
-task.spawn(function()
-    while task.wait(0.05) do
-        pcall(function()
-            if isAutoClick or isAutoTrain then
-                VirtualInputManager:SendMouseButtonEvent(0, 0, 0, true, game, 0)
-                VirtualInputManager:SendMouseButtonEvent(0, 0, 0, false, game, 0)
-            end
-        end)
-    end
-end)
-
--- Heartbeat Loop (Movement & Protection)
+-- Heartbeat Player Stats
 RunService.Heartbeat:Connect(function()
     pcall(function()
         local char = Player.Character
         if not char then return end
         local hum = char:FindFirstChildOfClass("Humanoid")
-
         if hum then
             hum.WalkSpeed = walkSpeedVal
             if isGodMode then hum.Health = hum.MaxHealth end
@@ -180,18 +188,9 @@ RunService.Heartbeat:Connect(function()
     end)
 end)
 
-UserInputService.JumpRequest:Connect(function()
-    pcall(function()
-        if isInfJump and Player.Character then
-            local hum = Player.Character:FindFirstChildOfClass("Humanoid")
-            if hum then hum:ChangeState(Enum.HumanoidStateType.Jumping) end
-        end
-    end)
-end)
-
 Rayfield:Notify({
-   Title = "Train Pets for Eggs",
-   Content = "Cyber Engine V1 Berhasil Dimuat!",
+   Title = "Cyber Engine V3 Aktif",
+   Content = "Sistem Presisi Telur Asli Terpasang!",
    Duration = 5,
    Image = 4483362458,
 })
