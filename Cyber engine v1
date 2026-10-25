@@ -1,11 +1,12 @@
--- [[ CYBER ENGINE V9 - ABSOLUTE SAFE ZONE & PLOT BLOCKER ]] --
+-- [[ CYBER ENGINE X - ULTIMATE SECURE AUTO FARM ]] --
 
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
 local RunService = game:GetService("RunService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Player = Players.LocalPlayer
 
--- ANTI-KICK & BYPASS KEAMANAN SERVER
+-- ULTRA BYPASS & ANTI-KICK SHIELD
 pcall(function()
     local mt = getrawmetatable(game)
     if mt then
@@ -31,15 +32,15 @@ if not success or not Rayfield then
 end
 
 local Window = Rayfield:CreateWindow({
-   Name = "⚡ Cyber Engine V9 // Clean Map Farm",
-   LoadingTitle = "Memuat Sistem V9...",
+   Name = "⚡ Cyber Engine X // Ultimate Edition",
+   LoadingTitle = "Inisialisasi Sistem Keamanan X...",
    LoadingSubtitle = "by Cyber Engine",
    ConfigurationSaving = { Enabled = false },
    KeySystem = false, 
 })
 
-local MainTab = Window:CreateTab("🥚 Farm Murni Map", 4483362458)
-local PlayerTab = Window:CreateTab("🚀 Settings", 4483362458)
+local MainTab = Window:CreateTab("🥚 Ultimate Farm", 4483362458)
+local PlayerTab = Window:CreateTab("🛡️ Security & Settings", 4483362458)
 
 local isAutoEgg = false
 local isGodMode = false
@@ -48,7 +49,7 @@ local customBasePos = nil
 local farmedCache = {}
 
 MainTab:CreateToggle({
-   Name = "🥚 Auto Farm (100% Skip Safe Zone & Plot)",
+   Name = "🥚 Auto Farm (Strict Safe-Zone & Plot Bypass)",
    CurrentValue = false,
    Callback = function(Value)
       isAutoEgg = Value
@@ -56,20 +57,20 @@ MainTab:CreateToggle({
 })
 
 PlayerTab:CreateButton({
-   Name = "📍 Set Posisi Base Pulang (Wajib Diset)",
+   Name = "📍 Set Titik Pulang Base / Safe Zone",
    Callback = function()
       pcall(function()
          local char = Player.Character
          if char and char:FindFirstChild("HumanoidRootPart") then
             customBasePos = char.HumanoidRootPart.CFrame
-            Rayfield:Notify({ Title = "Base Disimpan!", Content = "Titik pulang aktif.", Duration = 3 })
+            Rayfield:Notify({ Title = "Base Terkunci!", Content = "Titik pulang & area aman disimpan.", Duration = 3 })
          end
       end)
    end,
 })
 
 PlayerTab:CreateToggle({
-   Name = "🛡️ God Mode",
+   Name = "🛡️ God Mode Anti-Damage",
    CurrentValue = false,
    Callback = function(Value)
       isGodMode = Value
@@ -77,7 +78,7 @@ PlayerTab:CreateToggle({
 })
 
 PlayerTab:CreateInput({
-   Name = "WalkSpeed",
+   Name = "WalkSpeed Custom",
    PlaceholderText = "16",
    NumbersOnly = true,
    Callback = function(Text)
@@ -86,17 +87,16 @@ PlayerTab:CreateInput({
    end,
 })
 
--- FUNGSI FILTER WILAYAH: MENGABAIKAN SELURUH AREA SAFE ZONE, PLOT, DAN BASE
-local function isInsideSafeOrPlot(pos)
-    -- 1. Jika posisi terlalu dekat dengan titik base yang disimpan (Radius 70 stud mencakup seluruh area base & safe zone di sekitar plot)
+-- FUNGSI BLOKIR WILAYAH SAFE ZONE & PLOT SECARA TOTAL
+local function isInsideRestrictedZone(pos)
+    -- 1. Blokir radius ketat dari titik base yang disimpan (80 stud mencakup seluruh plot & safe zone terdekat)
     if customBasePos then
-        local distToBase = (pos - customBasePos.Position).Magnitude
-        if distToBase < 75 then
+        if (pos - customBasePos.Position).Magnitude < 85 then
             return true
         end
     end
 
-    -- 2. Deteksi otomatis semua objek yang ada kata "safe", "zone", "plot", "base", "spawn" di workspace
+    -- 2. Pemindaian otomatis seluruh objek bertuliskan safe, zone, plot, base, spawn di Workspace
     for _, obj in pairs(Workspace:GetDescendants()) do
         pcall(function()
             if obj and (obj:IsA("BasePart") or obj:IsA("Model")) then
@@ -104,9 +104,7 @@ local function isInsideSafeOrPlot(pos)
                 if name:find("safe") or name:find("zone") or name:find("plot") or name:find("base") or name:find("spawn") then
                     local part = obj:IsA("Model") and (obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart")) or obj
                     if part and part:IsA("BasePart") then
-                        local dist = (pos - part.Position).Magnitude
-                        -- Jika posisi telur berada di dalam area part tersebut atau dekat sekali
-                        if dist < 50 then
+                        if (pos - part.Position).Magnitude < 60 then
                             return true
                         end
                     end
@@ -114,13 +112,12 @@ local function isInsideSafeOrPlot(pos)
             end
         end)
     end
-
     return false
 end
 
--- LOGIKA FARMING UTAMA: FARM DI LUAR -> AMBIL -> TELEPORT BALIK KE BASE
+-- EKSEKUSI FARMING UTAMA DENGAN KEAMANAN TINGKAT TINGGI
 task.spawn(function()
-    while task.wait(1.2) do
+    while task.wait(1.0) do
         pcall(function()
             if not isAutoEgg then return end
             local char = Player.Character
@@ -136,7 +133,7 @@ task.spawn(function()
                     if obj and (obj:IsA("Model") or obj:IsA("BasePart")) then
                         local name = obj.Name:lower()
                         
-                        -- Pastikan hanya mengambil telur murni di luar area safe zone/plot
+                        -- Validasi nama telur murni di luar zona aman
                         if (name:find("egg") or name:find("telur") or name:find("nest")) 
                            and not name:find("player") 
                            and not name:find("character") 
@@ -148,47 +145,47 @@ task.spawn(function()
                             local part = obj:IsA("Model") and (obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart")) or obj
                             if part and part:IsA("BasePart") and part.Position.Y > -30 then
                                 
-                                -- CEK APAKAH TELUR ADA DI DALAM SAFE ZONE / PLOT
-                                local restricted = isInsideSafeOrPlot(part.Position)
+                                -- CEK APAKAH POSISI TELUR MASUK DALAM SAFE ZONE / PLOT
+                                local restricted = isInsideRestrictedZone(part.Position)
 
                                 if not restricted and (not farmedCache[part] or (tick() - farmedCache[part] > 8)) then
                                     farmedCache[part] = tick()
 
-                                    -- 1. Teleport ke telur di luar safe zone
+                                    -- 1. Teleport ke target telur di luar map
                                     hrp.CFrame = part.CFrame * CFrame.new(0, 3, 0)
-                                    task.wait(0.3)
+                                    task.wait(0.2)
 
-                                    -- 2. Trigger ProximityPrompt
+                                    -- 2. Picu ProximityPrompt
                                     local prompt = obj:FindFirstChildWhichIsA("ProximityPrompt", true) or part:FindFirstChildWhichIsA("ProximityPrompt", true)
                                     if prompt and fireproximityprompt then
                                         fireproximityprompt(prompt)
                                     end
 
-                                    -- 3. Trigger RemoteEvent pickup
-                                    for _, remote in pairs(game:GetService("ReplicatedStorage"):GetDescendants()) do
+                                    -- 3. Trigger RemoteEvent khusus pengambilan
+                                    for _, remote in pairs(ReplicatedStorage:GetDescendants()) do
                                         if remote:IsA("RemoteEvent") then
                                             local rName = remote.Name:lower()
-                                            if rName:find("egg") or rName:find("pickup") or rName:find("collect") then
-                                                pcall(function() 
-                                                    remote:FireServer(obj) 
-                                                    remote:FireServer(part) 
+                                            if rName:find("egg") or rName:find("pickup") or rName:find("collect") or rName:find("claim") then
+                                                pcall(function()
+                                                    remote:FireServer(obj)
+                                                    remote:FireServer(part)
                                                 end)
                                             end
                                         end
                                     end
 
-                                    -- 4. Simulasi touch interest
+                                    -- 4. Simulasi sentuhan fisik aman
                                     if firetouchinterest then
                                         firetouchinterest(hrp, part, 0)
                                         task.wait(0.05)
                                         firetouchinterest(hrp, part, 1)
                                     end
 
-                                    task.wait(0.4)
+                                    task.wait(0.3)
 
-                                    -- 5. WAJIB TELEPORT BALIK KE BASE SETELAH AMBIL TELUR
+                                    -- 5. KEMBALI INSTAN KE BASE / SAFE ZONE
                                     hrp.CFrame = baseCFrame
-                                    task.wait(0.8)
+                                    task.wait(0.6)
                                 end
                             end
                         end
@@ -199,18 +196,22 @@ task.spawn(function()
     end
 end)
 
+-- PENGATUR STATUS KARAKTER & SPEED
 RunService.Heartbeat:Connect(function()
     pcall(function()
         local char = Player.Character
         if not char then return end
         local hum = char:FindFirstChildOfClass("Humanoid")
-        if hum then hum.WalkSpeed = walkSpeedVal end
+        if hum then
+            hum.WalkSpeed = walkSpeedVal
+            if isGodMode then hum.Health = hum.MaxHealth end
+        end
     end)
 end)
 
 Rayfield:Notify({
-   Title = "Cyber Engine V9 Aktif",
-   Content = "Safe Zone & Auto-Return Diperbaiki!",
+   Title = "Cyber Engine X Aktif",
+   Content = "Sistem Keamanan & Safe-Zone Exclude 100% Berjalan!",
    Duration = 5,
    Image = 4483362458,
 })
