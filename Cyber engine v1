@@ -1,0 +1,46 @@
+-- [[ CYBER ENGINE V1 - TRAIN PETS FOR EGGS (SPECIFIC WORKER) ]] --
+
+local Players = game:GetService("Players")
+local Workspace = game:GetService("Workspace")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local VirtualInputManager = game:GetService("VirtualInputManager")
+local Player = Players.LocalPlayer
+
+-- Load Rayfield UI Library (Anti-Crash 100% Work di Delta)
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+local Window = Rayfield:CreateWindow({
+   Name = "⚡ Cyber Engine // Train Pets for Eggs",
+   LoadingTitle = "Memuat Skrip...",
+   LoadingSubtitle = "by Cyber Engine",
+   ConfigurationSaving = { Enabled = false },
+   KeySystem = false, 
+})
+
+-- Tabs UI
+local MainTab = Window:CreateTab("🥚 Auto Farm", 4483362458)
+local TrainTab = Window:CreateTab("🏋️ Training & Speed", 4483362458)
+local PlayerTab = Window:CreateTab("🚀 Player & Safe", 4483362458)
+
+-- Variabel Status
+local isAutoEgg = false
+local isAutoHatch = false
+local isAutoTrain = false
+local isAutoClick = false
+local isInfJump = false
+local isGodMode = false
+local walkSpeedVal = 16
+
+-- [ 1. TAB AUTO FARM EGGS ] --
+MainTab:CreateToggle({
+   Name = "🥚 Auto Grab & Collect Eggs",
+   CurrentValue = false,
+   Callback = function(Value)
+      isAutoEgg = Value
+   end,
+})
+
+MainTab:CreateToggle({
+   Name = "🐣 Auto Hatch / Open Eggs",
+   CurrentValue =
