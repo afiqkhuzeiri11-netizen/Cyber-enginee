@@ -1,4 +1,4 @@
--- [[ CYBER ENGINE X - ULTIMATE SECURE AUTO FARM ]] --
+-- [[ CYBER ENGINE X.1 - FIXED LOOT DELAY & SAFE RETURN ]] --
 
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
@@ -32,14 +32,14 @@ if not success or not Rayfield then
 end
 
 local Window = Rayfield:CreateWindow({
-   Name = "⚡ Cyber Engine X // Ultimate Edition",
-   LoadingTitle = "Inisialisasi Sistem Keamanan X...",
+   Name = "⚡ Cyber Engine X.1 // Fixed Timing",
+   LoadingTitle = "Memuat Sistem X.1...",
    LoadingSubtitle = "by Cyber Engine",
    ConfigurationSaving = { Enabled = false },
    KeySystem = false, 
 })
 
-local MainTab = Window:CreateTab("🥚 Ultimate Farm", 4483362458)
+local MainTab = Window:CreateTab("🥚 Farm & Loot", 4483362458)
 local PlayerTab = Window:CreateTab("🛡️ Security & Settings", 4483362458)
 
 local isAutoEgg = false
@@ -49,7 +49,7 @@ local customBasePos = nil
 local farmedCache = {}
 
 MainTab:CreateToggle({
-   Name = "🥚 Auto Farm (Strict Safe-Zone & Plot Bypass)",
+   Name = "🥚 Auto Farm (Ambil Dulu Baru Pulang)",
    CurrentValue = false,
    Callback = function(Value)
       isAutoEgg = Value
@@ -89,14 +89,12 @@ PlayerTab:CreateInput({
 
 -- FUNGSI BLOKIR WILAYAH SAFE ZONE & PLOT SECARA TOTAL
 local function isInsideRestrictedZone(pos)
-    -- 1. Blokir radius ketat dari titik base yang disimpan (80 stud mencakup seluruh plot & safe zone terdekat)
     if customBasePos then
         if (pos - customBasePos.Position).Magnitude < 85 then
             return true
         end
     end
 
-    -- 2. Pemindaian otomatis seluruh objek bertuliskan safe, zone, plot, base, spawn di Workspace
     for _, obj in pairs(Workspace:GetDescendants()) do
         pcall(function()
             if obj and (obj:IsA("BasePart") or obj:IsA("Model")) then
@@ -115,9 +113,9 @@ local function isInsideRestrictedZone(pos)
     return false
 end
 
--- EKSEKUSI FARMING UTAMA DENGAN KEAMANAN TINGKAT TINGGI
+-- EKSEKUSI FARMING DENGAN JEDA WAKTU PENGAMBILAN YANG PAS
 task.spawn(function()
-    while task.wait(1.0) do
+    while task.wait(1.2) do
         pcall(function()
             if not isAutoEgg then return end
             local char = Player.Character
@@ -133,85 +131,8 @@ task.spawn(function()
                     if obj and (obj:IsA("Model") or obj:IsA("BasePart")) then
                         local name = obj.Name:lower()
                         
-                        -- Validasi nama telur murni di luar zona aman
                         if (name:find("egg") or name:find("telur") or name:find("nest")) 
                            and not name:find("player") 
                            and not name:find("character") 
                            and not name:find("base") 
-                           and not name:find("spawn") 
-                           and not name:find("plot") 
-                           and not name:find("ui") then
-                            
-                            local part = obj:IsA("Model") and (obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart")) or obj
-                            if part and part:IsA("BasePart") and part.Position.Y > -30 then
-                                
-                                -- CEK APAKAH POSISI TELUR MASUK DALAM SAFE ZONE / PLOT
-                                local restricted = isInsideRestrictedZone(part.Position)
-
-                                if not restricted and (not farmedCache[part] or (tick() - farmedCache[part] > 8)) then
-                                    farmedCache[part] = tick()
-
-                                    -- 1. Teleport ke target telur di luar map
-                                    hrp.CFrame = part.CFrame * CFrame.new(0, 3, 0)
-                                    task.wait(0.2)
-
-                                    -- 2. Picu ProximityPrompt
-                                    local prompt = obj:FindFirstChildWhichIsA("ProximityPrompt", true) or part:FindFirstChildWhichIsA("ProximityPrompt", true)
-                                    if prompt and fireproximityprompt then
-                                        fireproximityprompt(prompt)
-                                    end
-
-                                    -- 3. Trigger RemoteEvent khusus pengambilan
-                                    for _, remote in pairs(ReplicatedStorage:GetDescendants()) do
-                                        if remote:IsA("RemoteEvent") then
-                                            local rName = remote.Name:lower()
-                                            if rName:find("egg") or rName:find("pickup") or rName:find("collect") or rName:find("claim") then
-                                                pcall(function()
-                                                    remote:FireServer(obj)
-                                                    remote:FireServer(part)
-                                                end)
-                                            end
-                                        end
-                                    end
-
-                                    -- 4. Simulasi sentuhan fisik aman
-                                    if firetouchinterest then
-                                        firetouchinterest(hrp, part, 0)
-                                        task.wait(0.05)
-                                        firetouchinterest(hrp, part, 1)
-                                    end
-
-                                    task.wait(0.3)
-
-                                    -- 5. KEMBALI INSTAN KE BASE / SAFE ZONE
-                                    hrp.CFrame = baseCFrame
-                                    task.wait(0.6)
-                                end
-                            end
-                        end
-                    end
-                end)
-            end
-        end)
-    end
-end)
-
--- PENGATUR STATUS KARAKTER & SPEED
-RunService.Heartbeat:Connect(function()
-    pcall(function()
-        local char = Player.Character
-        if not char then return end
-        local hum = char:FindFirstChildOfClass("Humanoid")
-        if hum then
-            hum.WalkSpeed = walkSpeedVal
-            if isGodMode then hum.Health = hum.MaxHealth end
-        end
-    end)
-end)
-
-Rayfield:Notify({
-   Title = "Cyber Engine X Aktif",
-   Content = "Sistem Keamanan & Safe-Zone Exclude 100% Berjalan!",
-   Duration = 5,
-   Image = 4483362458,
-})
+                           and not name:find("
