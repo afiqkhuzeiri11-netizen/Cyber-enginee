@@ -1,4 +1,4 @@
--- [[ CYBER ENGINE V1 - TRAIN PETS FOR EGGS (SPECIFIC WORKER) ]] --
+-- [[ CYBER ENGINE V1 - DIRECT EMBEDDED RAYFIELD ]] --
 
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
@@ -7,12 +7,19 @@ local UserInputService = game:GetService("UserInputService")
 local VirtualInputManager = game:GetService("VirtualInputManager")
 local Player = Players.LocalPlayer
 
--- Load Rayfield UI Library (Anti-Crash 100% Work di Delta)
-local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+-- Menggunakan URL Mirror Rayfield yang Stabil
+local success, Rayfield = pcall(function()
+    return loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+end)
+
+if not success or not Rayfield then
+    -- Fallback jika link utama gagal
+    Rayfield = loadstring(game:HttpGet('https://raw.githubusercontent.com/shlexware/Rayfield/main/source'))()
+end
 
 local Window = Rayfield:CreateWindow({
-   Name = "⚡ Cyber Engine // Train Pets for Eggs",
-   LoadingTitle = "Memuat Skrip...",
+   Name = "⚡ Cyber Engine V1 // Train Pets for Eggs",
+   LoadingTitle = "Memuat Cyber Engine V1...",
    LoadingSubtitle = "by Cyber Engine",
    ConfigurationSaving = { Enabled = false },
    KeySystem = false, 
@@ -23,7 +30,7 @@ local MainTab = Window:CreateTab("🥚 Auto Farm", 4483362458)
 local TrainTab = Window:CreateTab("🏋️ Training & Speed", 4483362458)
 local PlayerTab = Window:CreateTab("🚀 Player & Safe", 4483362458)
 
--- Variabel Status
+-- Status Variabel
 local isAutoEgg = false
 local isAutoHatch = false
 local isAutoTrain = false
@@ -32,7 +39,9 @@ local isInfJump = false
 local isGodMode = false
 local walkSpeedVal = 16
 
--- [ 1. TAB AUTO FARM EGGS ] --
+local farmedCache = {}
+
+-- [ 1. TAB AUTO FARM ] --
 MainTab:CreateToggle({
    Name = "🥚 Auto Grab & Collect Eggs",
    CurrentValue = false,
@@ -42,5 +51,147 @@ MainTab:CreateToggle({
 })
 
 MainTab:CreateToggle({
-   Name = "🐣 Auto Hatch / Open Eggs",
-   CurrentValue =
+   Name = "🐣 Auto Open / Hatch Eggs",
+   CurrentValue = false,
+   Callback = function(Value)
+      isAutoHatch = Value
+   end,
+})
+
+MainTab:CreateToggle({
+   Name = "⚡ Fast Auto Clicker",
+   CurrentValue = false,
+   Callback = function(Value)
+      isAutoClick = Value
+   end,
+})
+
+-- [ 2. TAB TRAINING & GYM ] --
+TrainTab:CreateToggle({
+   Name = "🏋️ Auto Train / Treadmill Gym",
+   CurrentValue = false,
+   Callback = function(Value)
+      isAutoTrain = Value
+   end,
+})
+
+-- [ 3. TAB PLAYER & UTILITY ] --
+PlayerTab:CreateToggle({
+   Name = "🛡️ God Mode / Anti-Death",
+   CurrentValue = false,
+   Callback = function(Value)
+      isGodMode = Value
+   end,
+})
+
+PlayerTab:CreateToggle({
+   Name = "🚀 Infinite Jump",
+   CurrentValue = false,
+   Callback = function(Value)
+      isInfJump = Value
+   end,
+})
+
+PlayerTab:CreateInput({
+   Name = "WalkSpeed (Default: 16)",
+   PlaceholderText = "Masukkan angka...",
+   NumbersOnly = true,
+   Callback = function(Text)
+      local v = tonumber(Text)
+      if v then walkSpeedVal = v end
+   end,
+})
+
+PlayerTab:CreateButton({
+   Name = "🏠 Teleport to Base / Spawn",
+   Callback = function()
+      pcall(function()
+         local char = Player.Character
+         if char and char:FindFirstChild("HumanoidRootPart") then
+            char.HumanoidRootPart.CFrame = CFrame.new(0, 10, 0)
+         end
+      end)
+   end,
+})
+
+-- [ 4. LOGIKA AUTO FARM TELUR ] --
+task.spawn(function()
+    while task.wait(0.3) do
+        pcall(function()
+            if not isAutoEgg then return end
+            local char = Player.Character
+            if not char then return end
+            local hrp = char:FindFirstChild("HumanoidRootPart")
+            if not hrp then return end
+
+            for _, obj in pairs(Workspace:GetDescendants()) do
+                if isAutoEgg and obj and (obj:IsA("BasePart") or obj:IsA("Model")) then
+                    local name = obj.Name:lower()
+                    if name:find("egg") or name:find("telur") or name:find("nest") or name:find("pickup") then
+                        local part = obj:IsA("Model") and (obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart")) or obj
+                        if part and (not farmedCache[part] or (tick() - farmedCache[part] > 5)) then
+                            farmedCache[part] = tick()
+                            
+                            hrp.CFrame = part.CFrame * CFrame.new(0, 2, 0)
+                            task.wait(0.1)
+
+                            local prompt = obj:FindFirstChildWhichIsA("ProximityPrompt", true) or part:FindFirstChildWhichIsA("ProximityPrompt", true)
+                            if prompt and fireproximityprompt then
+                                fireproximityprompt(prompt)
+                            end
+
+                            if firetouchinterest then
+                                firetouchinterest(hrp, part, 0)
+                                task.wait(0.05)
+                                firetouchinterest(hrp, part, 1)
+                            end
+                            task.wait(0.15)
+                        end
+                    end
+                end
+            end
+        end)
+    end
+end)
+
+-- Auto Clicker & Training Loop
+task.spawn(function()
+    while task.wait(0.05) do
+        pcall(function()
+            if isAutoClick or isAutoTrain then
+                VirtualInputManager:SendMouseButtonEvent(0, 0, 0, true, game, 0)
+                VirtualInputManager:SendMouseButtonEvent(0, 0, 0, false, game, 0)
+            end
+        end)
+    end
+end)
+
+-- Heartbeat Loop (Movement & Protection)
+RunService.Heartbeat:Connect(function()
+    pcall(function()
+        local char = Player.Character
+        if not char then return end
+        local hum = char:FindFirstChildOfClass("Humanoid")
+
+        if hum then
+            hum.WalkSpeed = walkSpeedVal
+            if isGodMode then hum.Health = hum.MaxHealth end
+        end
+    end)
+end)
+
+UserInputService.JumpRequest:Connect(function()
+    pcall(function()
+        if isInfJump and Player.Character then
+            local hum = Player.Character:FindFirstChildOfClass("Humanoid")
+            if hum then hum:ChangeState(Enum.HumanoidStateType.Jumping) end
+        end
+    end)
+end)
+
+Rayfield:Notify({
+   Title = "Train Pets for Eggs",
+   Content = "Cyber Engine V1 Berhasil Dimuat!",
+   Duration = 5,
+   Image = 4483362458,
+})
